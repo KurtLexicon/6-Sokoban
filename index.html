@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <title></title>
+        <link rel="stylesheet" href="style.css">
+        <link rel="shortcut icon" type="image/jpg" href="img/actorUp.jpg"/>        
+    </head>
+    <body onload="newGame();">
+        <header>
+            <audio id="beep" src="wav/beep.wav"></audio>
+            <!-- https://www.soundboard.com/sb/sound/1041462 -->
+            <audio id="yay" src="wav/yay.mp3"></audio>
+            <h1>Sokoban</h1>
+            <p>Use arrow keys to operate the tractor and push treasure boxes to the keys to unlock them.</p>
+            <button class="defaultButton" onclick="newGame();">Start new game</button>
+            <label id="statusLabel"> </label>
+        </header>
+        <div id="field"></div>
+        <script src="SokobanBase.js"></script>
+        <script src="javascript.js"></script>
+    </body>
+</html>

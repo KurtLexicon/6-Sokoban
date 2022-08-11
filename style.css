@@ -1,0 +1,147 @@
+
+
+html {
+    height: 100mv;
+    display: flex;
+    font-family: sans-serif;
+    background-color: gainsboro;
+    border-width: 1px;
+    border-color: blue;
+}
+
+body {
+    height: 100mv;
+    min-height:800px;
+    min-width:600px;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 1;
+    margin:0 0.5em;
+    padding:0;
+}
+
+header {
+    font-size: 3vmin;
+    height: 10em;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 1;
+    margin:0;
+}
+
+header * {
+    display: flex; 
+    flex-shrink: 1; 
+    margin:0;
+    margin-bottom: 0.5em;
+    align-self: flex-start;
+}
+
+button {
+    background-color: #4fb7b7;
+    height: 2em;
+    min-width: 10em;   
+    font-size: 3vmin;
+    padding:0.2em;
+    
+    box-shadow: 0.2em 0.2em 0.1em rgb(128, 128, 128); 
+    border-style: solid;
+    border-width: 2px;
+    border-color: black;
+    border-radius: 0.5em;
+    padding: 0.3em;
+    text-align: center;
+    justify-content: space-around;
+    align-items: center;
+}
+
+button:hover {
+    border-width: 3px;
+    box-shadow: 0.24em 0.24em 0.11em rgb(128, 128, 128);
+    font-weight: bold;
+}
+
+button:active {
+    position: relative;
+    left: 0.1em;
+    top: 0.1em;
+    box-shadow: 0.1em 0.1em 0.05em rgb(128, 128, 128); 
+}
+
+.error {
+    font-size: 110%;
+    background-color: red;
+    font-weight: bold;
+    padding: 0.2em 1em;
+}
+
+#field {
+    max-height: 60vmin;
+    max-width: 60vmin;
+    display: flex;
+    flex-direction: column;
+
+    background-color: green;
+    margin-bottom: 0.5em;
+    aspect-ratio: 1/1;
+}
+
+.row {
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+}
+
+
+.tile {
+    width: 100%;
+    border-style: solid;
+    border-width: 1px;
+    background-color: blue;
+    background-size: 100% 100%;
+}
+
+.tile-wall {
+    background-color: darkgray;
+    background-image: url("img/wall.png");    
+}
+
+.tile-space {
+    background-color: gainsboro;
+}
+
+.tile-goal {
+    background-color: yellowgreen;
+    background-image: url("img/target.jpg");    
+}
+
+.entity-player {
+    background-color: green;
+    background-image: url("img/actorUp.jpg"); 
+}
+
+.entity-block {
+    background-color: orange;
+    background-image: url("img/box.jpg");    
+}
+
+.tile-goal.entity-block {
+    background-color: orangered;
+    background-image: url("img/boxOnTarget.jpg"); 
+}
+
+.entity-player.up {
+    transform: rotate(0deg)
+}
+
+.entity-player.right {
+    transform: rotate(90deg)
+}
+
+.entity-player.down {
+    transform: rotate(180deg)
+}
+
+.entity-player.left {
+    transform: rotate(270deg)
+}
