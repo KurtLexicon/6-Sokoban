@@ -1,12 +1,12 @@
 ﻿
-/* Constants for static elements */
+/* Constants for 2d elements */
 
 const E = 'empty';
-const W = 'wall';
 const T = 'target';
 
-/* Constants for movable elements */
+/* Constants for 3d elements */
 
+const W = 'wall';
 const B = 'block';
 const A = 'actor';
 
@@ -23,6 +23,16 @@ const Sound = {
   Beep: 'beep',
   Yay: 'yay',
 }
+
+/* Constants for GameStatus */
+
+const GameStatus = {
+  Active: 'active',
+  Resigned: 'resigned',
+  Success: 'success',
+}
+
+
 
 /* Constants for KeyDown codes handled in JS */
 
@@ -89,17 +99,12 @@ const Direction2Diff = {
 }
 
 
-/* Mapping of CSS Classes for the static elements */
+/* Mapping of CSS Classes for fieldItems */
 
-const Tiles = {
+const FieldItem2CSS = {
   [W]: Cls.TileWall,
   [E]: Cls.TileEmpty,
   [T]: Cls.TileTarget,
-};
-
-/* Mapping of CSS Classes for the moving elements */
-
-const Entities = {
   [A]: Cls.EntityActor,
   [B]: Cls.EntityBlock,
 };

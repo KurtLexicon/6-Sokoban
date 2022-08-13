@@ -41,7 +41,7 @@ function handleArrowKey(event) {
     let direction = ArrowKey2Direction[event.key]
     if (direction) {
         moveActor(direction);
-        updateGameStatus(true);
+        updateGameStatus(game && !isGameDone());
     }
 }
 
@@ -50,20 +50,20 @@ function handleArrowKey(event) {
  */
 
 function moveActor(direction) {
-    if(game.done) return
+    if (isGameDone()) return
 
-    const thisPos = game.pos
-    const maxBlocks = 2
+    const thisPos = game.actorPosition
+    const maxBlocks = 3
     if (moveItem(thisPos, direction, maxBlocks)) {
         setTileState(thisPos, E, direction)
-        game.pos = addPos(game, thisPos, direction)
+        game.actorPosition = addPos(thisPos, direction)
     } else {
         playSound(Sound.Beep)
     }
 }
 
 function moveItem(thisPos, direction, maxBlocks) {
-    const nextPos = addPos(game, thisPos, direction);
+    const nextPos = addPos(thisPos, direction);
     const thisState = objGet(thisPos)
     const nextState = objGet(nextPos)
 
@@ -83,31 +83,26 @@ function moveItem(thisPos, direction, maxBlocks) {
  * Set CSS-classes on tiles
  */
 
- function setTileState(pos, value, direction) {
-    const {r, c} = pos
-    game.objs[r][c] = value
-    setTileClass(r, c, direction)
+function setTileState(pos, item, direction) {
+    cell = game.board[pos.r][pos.c]
+    cell.fieldItem3d = item
+    setTileClass(cell, direction)
 }
 
-function setAllTileClasses() {
-    if(game.done) return
-
-    for({r, c} of boardCells(game.objs)) {
-        setTileClass(r, c)
-    }
-}
-
-function setTileClass(r, c, direction) {
-    const className = [
+function getClassnameForCell(cell, direction) {
+    return [
         Cls.Tile,
-        Tiles[game.map[r][c]],
-        Entities[game.objs[r][c]],
+        FieldItem2CSS[cell.fieldItem2d],
+        FieldItem2CSS[cell.fieldItem3d],
         direction && Direction2CSS[direction] 
     ]
     .filter(item => item) // remove undefined
     .join(' ')
+}
 
-    const node = document.getElementById(nodeId(r, c));
+function setTileClass(cell, direction) {
+    const className = getClassnameForCell(cell, direction)
+    const node = document.getElementById(nodeId(cell));
     if (node.className !== className) node.className = className
 }
 
@@ -120,12 +115,12 @@ function setTileClass(r, c, direction) {
     if (addMoves) game.moves += 1
 
     let success = true
-    for({mapCell, objCell} of gameCells()) {
-        if ((objCell === B) !== (mapCell == T)) success = false
+    for( cell of game.boardCells) {
+        if ((cell.fieldItem3d === B) !== (cell.fieldItem2d == T)) success = false
     }
 
-    if(success && !game.done) {
-        game.done = success
+    if (success && !isGameDone()) {
+        game.status = GameStatus.Success
         playSound(Sound.Yay);
     }
     setStatusText()
@@ -139,42 +134,24 @@ function setTileClass(r, c, direction) {
 function boardFromTemplate(template) {
     return template.map((row, r) => row.map((cellValue, c) => {
         return {
-            mapCell: [T, W].includes(cellValue) ? cellValue : E,
-            objCell: [A, B].includes(cellValue) ? cellValue : E,
+            fieldItem2d: [T].includes(cellValue) ? cellValue : E,
+            fieldItem3d: [A, B, W].includes(cellValue) ? cellValue : E,
             r,
             c,
         }
     }))
 }
 
-
-function mapFromTemplate(template) {
-    let map = template.map(row=>row.map(cell => [B, A].findIndex(c => cell == c) >= 0 ? E: cell))
-    return map
-}
-
-function objsFromTemplate(template) {
-    let objs = template.map(row=>row.map(cell => cell == T ? E: cell))
-    return objs
-}
-
-
-function actorPositionFromTemplate(template) {
-    let pos
-    for({cell, r, c} of boardCells(template)) {
-        if(cell === A) {
-            if(pos) throw 'More than one actor found in game'
-            pos = {r, c}
-        }
-    }
-    if(!pos) throw Error ('No actor found in game')
-    return pos
+function getActorPosition(boardItems) {
+    const actorCells = boardItems.filter(cell => cell.fieldItem3d === A)
+    if (actorCells.length !== 1) throw 'The game template should have exactly one actor'
+    return actorCells[0]
 }
 
 /* Creates random index for next game */
 function randomTemplateIndex(templates) {
     if (!game) return rndInt(templates.length)
-    if(templates.length === 1) return 0;
+    if (templates.length === 1) return 0;
 
     // If we have a current game then make
     // sure we don't get the same again
@@ -184,59 +161,62 @@ function randomTemplateIndex(templates) {
 }
 
 /* Create tiles in DOM, with id's and static classes */
-function createDomTiles() {
-    const field = document.getElementById(DocId.Field);
-    field.innerHTML = '';
+function initField() {
+    const fieldNode = document.getElementById(DocId.Field);
+    fieldNode.innerHTML = '';
 
-    for(r = 0; r < game.map.length; r++) {
-        let rowNode = document.createElement('div');
-        rowNode.className = Cls.Row;
-        field.appendChild(rowNode);
-
-        let row = game.map[r];
-        for(c = 0; c < row.length; c++) {
-            let cell = row[c];
-            let node = document.createElement('div');
-            node.className = Tiles[cell];
-            node.setAttribute('id', nodeId(r, c));
-            rowNode.appendChild(node);
+    for(row of game.board) {
+        const rowNode = addDomElement(fieldNode, 'div', Cls.Row)
+        for(cell of row){
+            const id = nodeId(cell)
+            const className = getClassnameForCell(cell)
+            addDomElement(rowNode, 'div', className, id)
         };
     };
 }
 
+function addDomElement(parentNode, elemType, className, id) {
+    let newNode = document.createElement(elemType);
+    newNode.className = className;
+    id && newNode.setAttribute('id', id);
+    parentNode.appendChild(newNode);
+    return newNode
+}
+
 function archiveGame(game) {
-    if(game) {
-        delete game.map
-        delete game.objs
+    if (game && game.moves) {
         delete game.board
-        delete game.pos
+        delete game.boardCells
+        delete game.actorPosition
         gameHistory.push(game)
-        game = undefined
     }
+    game = undefined
 }
 
 function newGame() {
     try {
-        if(!game) sanityCheckTemplates(); // only once, before first game is created
+        if (!game) sanityCheckTemplates() // only once, before first game is created
 
         let templates = Object.values(gameTemplates)
         let ixTemplate = randomTemplateIndex(templates)
         let template = templates[ixTemplate].map(row => [...row].map(c => Char2Code[c]))
-        
+
         archiveGame(game)
+
+        const board = boardFromTemplate(template)
+        const boardCells = flatArray(board)
+        const actorPosition = getActorPosition(boardCells)
         game = {
             index: ixTemplate,
             name: Object.keys(gameTemplates)[ixTemplate],
-            board: boardFromTemplate(template),
-            map: mapFromTemplate(template),
-            objs: objsFromTemplate(template),
-            pos: actorPositionFromTemplate(template),
+            board,
+            boardCells,
+            actorPosition,
             moves: 0,
-            done: false,
+            status: GameStatus.Active,
         }
         
-        createDomTiles()
-        setAllTileClasses()
+        initField()
         setStatusText()
     } catch (err) {
         setStatusText(err)
@@ -261,17 +241,17 @@ function sanityCheckTemplate(template) {
     let count = {}
 
     const nRows = template.length
-    if(nRows < 6) throw 'There should be at least 6 rows'
+    if (nRows < 6) throw 'There should be at least 6 rows'
 
     let nCols
     template.map((row, r) => {
         nCols = nCols || row.length
-        if(nCols < 6) throw 'There should be at least 6 columns'
-        if(nCols !== row.length) throw 'All rows should have same number of columns'
+        if (nCols < 6) throw 'There should be at least 6 columns'
+        if (nCols !== row.length) throw 'All rows should have same number of columns'
 
-        for(c = 0; c < row.length; c++) {
+        for (c = 0; c < row.length; c++) {
             const cell = Char2Code[row[c]];
-            if(cell === undefined) throw `Unknown char code ${row[c]} in template definition`
+            if (cell === undefined) throw `Unknown char code ${row[c]} in template definition`
             count[cell] = (count[cell] || 0) + 1
         };
     })
@@ -284,8 +264,8 @@ function sanityCheckTemplate(template) {
  * Helpers and misc
  ***************************************/
 
- function nodeId(r, c) {
-    return `r${r}c${c}`
+ function nodeId(cell) {
+    return `r${cell.r}c${cell.c}`
 }
 
 function rndInt(n) {
@@ -298,17 +278,17 @@ function playSound(soundId) {
 
 /* Get the entity value for a cell by pos */
 function objGet(pos) {
-    return pos && game.objs[pos.r][pos.c]
+    return pos && game.board[pos.r][pos.c].fieldItem3d
 }
 
-/* Adds addPos to game.pos, returns undefined if outside the board */
-function addPos(game, gamePos, direction) {
+/* Gets position in direction 'direction' from pos */
+function addPos(pos, direction) {
     const {r, c} = Direction2Diff[direction]
-    const newPos = {r: gamePos.r + r, c: gamePos.c + c}
+    const newPos = {r: pos.r + r, c: pos.c + c}
 
     // Make sure we only return positions that are actually on the board
-    if(game.objs[newPos.r] === undefined)  return undefined
-    if(game.objs[newPos.r][newPos.c] === undefined)  return undefined
+    if (game.board[newPos.r] === undefined)  return undefined
+    if (game.board[newPos.r][newPos.c] === undefined)  return undefined
 
     return newPos
 }
@@ -319,39 +299,23 @@ function setStatusText(error) {
     const statustext = 
         error ? (error.message || error) :
         !game ? 'No avtive game' :
-        game.done ? `Success!! You finished the game in ${game.moves} moves!!` :
-        game.done ? `Success!! You finished the game in ${game.moves} moves!!` :
-        /* game.active */ `${game.moves} moves so far` 
+        game.status === GameStatus.Success ? `Success!! You finished the game in ${game.moves} moves!!` :
+        game.status === GameStatus.Active ? `${game.moves} moves so far` :
+        game.status === GameStatus.Redigned ? `Resigned after ${game.moves} moves` :
+        `Unknown game status ${game.status}`
 
     elem = document.getElementById(DocId.StatusLabel)
     elem.innerHTML = statustext;
     elem.className = error ? Cls.Error : ''
 }
 
-/* Returns an array of all tiles in the game, with coordinates and static/movalble objects */
-function gameCells() {
-    let tiles = []
-    for(r = 0; r < game.map.length; r++) {
-      for(c = 0; c < game.map[r].length; c++) {
-        tiles.push({
-            mapCell: game.map[r][c],
-            objCell: game.objs[r][c],
-            r,
-            c
-        })
-      }
-    }
-    return tiles
+/* Returns an array that includes all entries in a 2 dimensional array */
+
+function flatArray(board) {
+    return board.reduce((acc, row) => (acc.push(...row), acc), [])
 }
 
-
-/* Returns an array of all entries in an 2 domensional array, with coordinates and values */
-function boardCells(board) {
-    const tiles = []
-    for(r = 0; r < board.length; r++) {
-      for(c = 0; c < board[r].length; c++) {
-        tiles.push({cell: board[r][c], r, c})
-      }
-    }
-    return tiles
+/* Check if game is finished */ 
+function isGameDone(){
+    return game && [GameStatus.Success, GameStatus.Resigned].includes(game.status)
 }
